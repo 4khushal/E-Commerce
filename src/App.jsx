@@ -103,6 +103,7 @@ function App() {
                 <Route path="/*" element={<PublicLayout />} />
               )}
             </Routes>
+          </Suspense>
           </div>
         </CartProvider>
       </AdminAuthProvider>
