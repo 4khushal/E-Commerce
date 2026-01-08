@@ -12,12 +12,9 @@ export default defineConfig({
   build: {
     outDir: 'dist-admin',
     sourcemap: false,
-    minify: 'terser',
-    terserOptions: {
-      compress: {
-        drop_console: true, // Remove console.log in production
-        drop_debugger: true,
-      },
+    minify: 'esbuild', // Use esbuild (built into Vite, faster than terser)
+    esbuild: {
+      drop: ['console', 'debugger'], // Remove console.log and debugger in production
     },
     rollupOptions: {
       output: {
