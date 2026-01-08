@@ -33,7 +33,7 @@ Both need to be deployed as **separate Vercel projects**.
 
 ### Step 3: Add Environment Variables
 
-Click "Environment Variables" and add the same variables as user dashboard:
+Click "Environment Variables" and add the same variables as user dashboard, PLUS one critical variable:
 
 ```
 VITE_SUPABASE_URL = your_supabase_project_url
@@ -41,7 +41,10 @@ VITE_SUPABASE_ANON_KEY = your_supabase_anon_key
 VITE_STRIPE_PUBLISHABLE_KEY = pk_live_your_stripe_key
 VITE_FRONTEND_URL = https://your-user-dashboard.vercel.app
 VITE_API_URL = https://your-backend-url.railway.app
+VITE_IS_ADMIN = true  ⚠️ CRITICAL: This tells the app it's the admin build!
 ```
+
+⚠️ **IMPORTANT**: The `VITE_IS_ADMIN = true` variable is **required** for the admin dashboard to work correctly in production!
 
 **For each variable:**
 - Select all environments: Production, Preview, Development
