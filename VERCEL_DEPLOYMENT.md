@@ -21,11 +21,13 @@
 
 3. **Configure Project Settings**:
    - **Project Name**: `react-ecommerce` (or your preferred name)
-   - **Framework Preset**: Select "Vite" (or leave as "Other")
+   - **Framework Preset**: Select "Vite" (Vercel will auto-detect)
    - **Root Directory**: Leave as `./` (root)
-   - **Build Command**: `npm run build`
-   - **Output Directory**: `dist`
-   - **Install Command**: `npm install`
+   - **Build Command**: `npm run build` (auto-detected by Vercel)
+   - **Output Directory**: `dist` (auto-detected by Vercel)
+   - **Install Command**: `npm install` (auto-detected by Vercel)
+   
+   ⚠️ **Note**: The `vercel.json` file uses modern configuration, so Vercel will automatically detect these settings. You can leave them as default.
 
 4. **Add Environment Variables**:
    - Click "Environment Variables" section
