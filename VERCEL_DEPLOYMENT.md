@@ -79,15 +79,18 @@
    - **Output Directory**: `dist-admin`
    - **Install Command**: `npm install`
 
-3. **Add Same Environment Variables**:
-   Use the same environment variables as the user dashboard:
+3. **Add Environment Variables**:
+   Use the same environment variables as the user dashboard, PLUS add one more:
    ```
    VITE_SUPABASE_URL = your_supabase_project_url
    VITE_SUPABASE_ANON_KEY = your_supabase_anon_key
    VITE_STRIPE_PUBLISHABLE_KEY = pk_live_your_stripe_key
    VITE_FRONTEND_URL = https://your-app.vercel.app
    VITE_API_URL = https://your-backend-url.railway.app
+   VITE_IS_ADMIN = true  ⚠️ IMPORTANT: Add this for admin dashboard!
    ```
+   
+   ⚠️ **Critical**: The `VITE_IS_ADMIN = true` variable tells the app this is the admin build!
 
 4. **Deploy**:
    - Click "Deploy"

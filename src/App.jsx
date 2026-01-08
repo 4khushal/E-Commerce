@@ -7,6 +7,7 @@ import Header from './components/Header'
 import Footer from './components/Footer'
 import AdminRoute from './components/AdminRoute'
 import LoadingSpinner from './components/LoadingSpinner'
+import { isAdminBuild } from './utils/config'
 
 // Lazy load pages for better performance and code splitting
 const Home = lazy(() => import('./pages/Home'))
@@ -55,7 +56,8 @@ const PublicLayout = () => {
   )
 }
 
-// Check if we're running on admin port (3001)
+// Check if we're running on admin port (for local development)
+// or if this is the admin build (for production)
 const isAdminPort = () => {
   if (typeof window !== 'undefined') {
     return window.location.port === '3001' || window.location.port === '5174'
@@ -64,7 +66,8 @@ const isAdminPort = () => {
 }
 
 function App() {
-  const adminPort = isAdminPort()
+  // In production, use environment variable; in development, use port detection
+  const adminPort = isAdminBuild || isAdminPort()
   
   return (
     <AuthProvider>
