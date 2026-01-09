@@ -37,49 +37,88 @@ const CheckoutSuccess = () => {
       }
 
       try {
+        // Log API URL for debugging
+        console.log('🔍 Fetching session from:', `${apiUrl}/api/checkout-session/${sessionId}`)
+        console.log('🔍 API URL configured:', apiUrl)
+        console.log('🔍 Session ID:', sessionId)
+        
         // Retrieve session details from backend with timeout and retry logic for mobile
         let response
         let lastError
+        let lastStatus
         
         // Retry logic for mobile network issues
         for (let attempt = 0; attempt < 3; attempt++) {
           try {
+            console.log(`🔄 Attempt ${attempt + 1}/3 to fetch session...`)
+            
             // Create AbortController for timeout
             const controller = new AbortController()
-            const timeoutId = setTimeout(() => controller.abort(), 15000) // 15 second timeout
+            const timeoutId = setTimeout(() => controller.abort(), 20000) // 20 second timeout for mobile
             
             response = await fetch(`${apiUrl}/api/checkout-session/${sessionId}`, {
               signal: controller.signal,
+              method: 'GET',
               headers: {
                 'Content-Type': 'application/json',
+                'Accept': 'application/json',
               },
+              mode: 'cors', // Explicitly set CORS mode
             })
             
             clearTimeout(timeoutId)
+            lastStatus = response.status
+            
+            console.log(`📡 Response status: ${response.status} ${response.statusText}`)
             
             if (response.ok) {
+              console.log('✅ Successfully retrieved session')
               break // Success, exit retry loop
             } else {
-              lastError = new Error(`Failed to retrieve payment session (Status: ${response.status})`)
+              // Try to get error message from response
+              let errorMessage = `Failed to retrieve payment session (Status: ${response.status})`
+              try {
+                const errorData = await response.json()
+                errorMessage = errorData.error || errorMessage
+                console.error('❌ Error response:', errorData)
+              } catch (e) {
+                const text = await response.text()
+                console.error('❌ Error response text:', text)
+              }
+              lastError = new Error(errorMessage)
             }
           } catch (fetchError) {
+            console.error(`❌ Fetch error on attempt ${attempt + 1}:`, fetchError)
             lastError = fetchError
+            
             if (fetchError.name === 'AbortError') {
-              lastError = new Error('Request timed out. Please check your internet connection.')
+              lastError = new Error('Request timed out. Please check your internet connection and try again.')
+              console.error('⏱️ Request timed out')
+            } else if (fetchError.message.includes('Failed to fetch') || fetchError.message.includes('NetworkError')) {
+              lastError = new Error('Network error. Please check your internet connection. If the problem persists, your payment may still have been processed.')
+              console.error('🌐 Network error detected')
+            } else if (fetchError.message.includes('CORS')) {
+              lastError = new Error('Connection error. Please contact support.')
+              console.error('🚫 CORS error detected')
             }
             
             // Wait before retry (exponential backoff)
             if (attempt < 2) {
-              await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)))
+              const waitTime = 1000 * (attempt + 1)
+              console.log(`⏳ Waiting ${waitTime}ms before retry...`)
+              await new Promise(resolve => setTimeout(resolve, waitTime))
             }
           }
         }
         
         if (!response || !response.ok) {
-          throw lastError || new Error('Failed to retrieve payment session after multiple attempts')
+          const finalError = lastError || new Error(`Failed to retrieve payment session after 3 attempts (Status: ${lastStatus || 'unknown'})`)
+          console.error('❌ Final error:', finalError)
+          throw finalError
         }
 
         const session = await response.json()
+        console.log('✅ Session data retrieved:', session)
         setSessionData(session)
 
         // Create order in Supabase if payment was successful
@@ -193,21 +232,40 @@ const CheckoutSuccess = () => {
 
         setLoading(false)
       } catch (err) {
-        console.error('Error processing payment:', err)
+        console.error('❌ Error processing payment:', err)
+        console.error('❌ Error details:', {
+          message: err.message,
+          name: err.name,
+          stack: err.stack,
+          apiUrl: apiUrl,
+          sessionId: sessionId,
+        })
         
         // Provide user-friendly error messages
         let errorMessage = 'Failed to process payment'
+        let showRetry = true
         
         if (err.message) {
           if (err.message.includes('timeout') || err.message.includes('timed out')) {
             errorMessage = 'Connection timed out. Please check your internet connection and try again.'
           } else if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
-            errorMessage = 'Network error. Please check your internet connection and try again.'
+            errorMessage = 'Network error. Please check your internet connection. Your payment may still have been processed - please check your orders.'
           } else if (err.message.includes('CORS')) {
             errorMessage = 'Connection error. Please contact support if this persists.'
+          } else if (err.message.includes('Status: 404')) {
+            errorMessage = 'Session not found. The payment session may have expired. Please contact support.'
+            showRetry = false
+          } else if (err.message.includes('Status: 500')) {
+            errorMessage = 'Server error. Please try again or contact support.'
           } else {
             errorMessage = err.message
           }
+        }
+        
+        // Check if API URL is configured
+        if (!apiUrl || apiUrl.includes('localhost')) {
+          errorMessage = 'API server is not configured. Please contact support.'
+          console.error('⚠️ API URL is not properly configured:', apiUrl)
         }
         
         setError(errorMessage)
@@ -253,7 +311,9 @@ const CheckoutSuccess = () => {
                 setError(null)
                 setLoading(true)
                 orderCreationInProgress.current = false
-                window.location.reload()
+                // Force reload to retry
+                const currentUrl = new URL(window.location.href)
+                window.location.href = currentUrl.href
               }}
             >
               Retry

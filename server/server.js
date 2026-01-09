@@ -13,13 +13,28 @@ const ADMIN_URL = process.env.ADMIN_URL || 'http://localhost:3001'
 
 // CORS Configuration - Production ready
 const corsOptions = {
-  origin: NODE_ENV === 'production' 
-    ? [FRONTEND_URL, ADMIN_URL] 
-    : ['http://localhost:3000', 'http://localhost:3001'],
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or Postman)
+    if (!origin) {
+      return callback(null, true)
+    }
+    
+    const allowedOrigins = NODE_ENV === 'production' 
+      ? [FRONTEND_URL, ADMIN_URL] 
+      : ['http://localhost:3000', 'http://localhost:3001']
+    
+    // Check if origin is in allowed list or is a Vercel domain
+    if (allowedOrigins.includes(origin) || origin.includes('.vercel.app')) {
+      callback(null, true)
+    } else {
+      console.log('CORS blocked origin:', origin)
+      callback(new Error('Not allowed by CORS'))
+    }
+  },
   credentials: true,
   optionsSuccessStatus: 200,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
 }
 
 // Middleware
