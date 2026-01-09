@@ -134,9 +134,34 @@ const Checkout = () => {
         throw new Error('No checkout URL or session ID received from server')
       }
     } catch (err) {
-      console.error('Checkout error:', err)
-      setError(err.message || 'Failed to initiate payment. Please try again.')
-      showToast.error(err.message || 'Payment initialization failed')
+      console.error('❌ Checkout error:', err)
+      console.error('❌ Error details:', {
+        message: err.message,
+        name: err.name,
+        stack: err.stack,
+      })
+      
+      // Provide user-friendly error messages
+      let errorMessage = 'Failed to initiate payment. Please try again.'
+      
+      if (err.message) {
+        if (err.message.includes('timed out') || err.message.includes('timeout')) {
+          errorMessage = 'Connection timed out. Please check your internet connection and try again.'
+        } else if (err.message.includes('Network error') || err.message.includes('Failed to fetch')) {
+          errorMessage = 'Network error. Please check your internet connection and try again.'
+        } else if (err.message.includes('not configured')) {
+          errorMessage = 'Payment service is not available. Please contact support.'
+        } else if (err.message.includes('not authenticated')) {
+          errorMessage = 'Please login to continue with checkout.'
+        } else if (err.message.includes('empty')) {
+          errorMessage = 'Your cart is empty. Please add items before checkout.'
+        } else {
+          errorMessage = err.message
+        }
+      }
+      
+      setError(errorMessage)
+      showToast.error(errorMessage)
       setLoading(false)
     }
   }
