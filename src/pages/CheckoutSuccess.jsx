@@ -37,11 +37,46 @@ const CheckoutSuccess = () => {
       }
 
       try {
-        // Retrieve session details from backend
-        const response = await fetch(`${apiUrl}/api/checkout-session/${sessionId}`)
+        // Retrieve session details from backend with timeout and retry logic for mobile
+        let response
+        let lastError
         
-        if (!response.ok) {
-          throw new Error('Failed to retrieve payment session')
+        // Retry logic for mobile network issues
+        for (let attempt = 0; attempt < 3; attempt++) {
+          try {
+            // Create AbortController for timeout
+            const controller = new AbortController()
+            const timeoutId = setTimeout(() => controller.abort(), 15000) // 15 second timeout
+            
+            response = await fetch(`${apiUrl}/api/checkout-session/${sessionId}`, {
+              signal: controller.signal,
+              headers: {
+                'Content-Type': 'application/json',
+              },
+            })
+            
+            clearTimeout(timeoutId)
+            
+            if (response.ok) {
+              break // Success, exit retry loop
+            } else {
+              lastError = new Error(`Failed to retrieve payment session (Status: ${response.status})`)
+            }
+          } catch (fetchError) {
+            lastError = fetchError
+            if (fetchError.name === 'AbortError') {
+              lastError = new Error('Request timed out. Please check your internet connection.')
+            }
+            
+            // Wait before retry (exponential backoff)
+            if (attempt < 2) {
+              await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)))
+            }
+          }
+        }
+        
+        if (!response || !response.ok) {
+          throw lastError || new Error('Failed to retrieve payment session after multiple attempts')
         }
 
         const session = await response.json()
@@ -159,7 +194,23 @@ const CheckoutSuccess = () => {
         setLoading(false)
       } catch (err) {
         console.error('Error processing payment:', err)
-        setError(err.message || 'Failed to process payment')
+        
+        // Provide user-friendly error messages
+        let errorMessage = 'Failed to process payment'
+        
+        if (err.message) {
+          if (err.message.includes('timeout') || err.message.includes('timed out')) {
+            errorMessage = 'Connection timed out. Please check your internet connection and try again.'
+          } else if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
+            errorMessage = 'Network error. Please check your internet connection and try again.'
+          } else if (err.message.includes('CORS')) {
+            errorMessage = 'Connection error. Please contact support if this persists.'
+          } else {
+            errorMessage = err.message
+          }
+        }
+        
+        setError(errorMessage)
         setLoading(false)
         orderCreationInProgress.current = false // Reset on error
       }
@@ -188,9 +239,27 @@ const CheckoutSuccess = () => {
           <Alert.Heading>Payment Processing Error</Alert.Heading>
           <p>{error}</p>
           <hr />
-          <div className="d-flex gap-2">
-            <Button variant="primary" onClick={() => navigate('/checkout')}>
-              Back to Checkout
+          <div className="mb-3">
+            <p className="small text-muted">
+              <strong>Note:</strong> If your payment was successful, your order may still have been processed. 
+              Please check your email or contact support with your session ID: <code>{sessionId}</code>
+            </p>
+          </div>
+          <div className="d-flex flex-column flex-sm-row gap-2">
+            <Button 
+              variant="primary" 
+              onClick={() => {
+                // Retry the payment processing
+                setError(null)
+                setLoading(true)
+                orderCreationInProgress.current = false
+                window.location.reload()
+              }}
+            >
+              Retry
+            </Button>
+            <Button variant="outline-secondary" onClick={() => navigate('/orders')}>
+              Check My Orders
             </Button>
             <Button variant="outline-secondary" onClick={() => navigate('/')}>
               Go to Home
