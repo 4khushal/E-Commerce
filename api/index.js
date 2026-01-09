@@ -5,13 +5,21 @@ const express = require('express')
 const cors = require('cors')
 const path = require('path')
 
-// Load environment variables
-require('dotenv').config({ path: path.join(__dirname, '../server/.env') })
+// Load environment variables (Vercel provides these via environment variables)
+// dotenv is only needed for local development
+if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+  try {
+    require('dotenv').config({ path: path.join(__dirname, '../server/.env') })
+  } catch (e) {
+    // .env file not found, use environment variables from Vercel
+  }
+}
 
 const app = express()
 
 const NODE_ENV = process.env.NODE_ENV || 'production'
-const FRONTEND_URL = process.env.FRONTEND_URL || process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000'
+// In Vercel, use environment variables. Fallback to VERCEL_URL if available
+const FRONTEND_URL = process.env.FRONTEND_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
 const ADMIN_URL = process.env.ADMIN_URL || 'http://localhost:3001'
 
 // CORS Configuration - Production ready
