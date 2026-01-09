@@ -9,7 +9,8 @@
     "build": "vite build",
     "build:admin": "vite build --config vite.admin.config.js",
     "preview": "vite preview",
-    "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0"
+    "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
+    "server:dev": "cd server && node server.js"
   },
   "dependencies": {
     "@stripe/stripe-js": "^2.1.11",
