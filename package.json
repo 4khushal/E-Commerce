@@ -6,8 +6,8 @@
   "scripts": {
     "dev": "vite",
     "dev:admin": "vite --config vite.admin.config.js",
-    "build": "npx vite build",
-    "build:admin": "npx vite build --config vite.admin.config.js",
+    "build": "node_modules/.bin/vite build",
+    "build:admin": "node_modules/.bin/vite build --config vite.admin.config.js",
     "preview": "vite preview",
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
     "server:dev": "cd server && node server.js"
