@@ -149,8 +149,16 @@ const Checkout = () => {
           errorMessage = 'Connection timed out. Please check your internet connection and try again.'
         } else if (err.message.includes('Network error') || err.message.includes('Failed to fetch')) {
           errorMessage = 'Network error. Please check your internet connection and try again.'
-        } else if (err.message.includes('not configured')) {
-          errorMessage = 'Payment service is not available. Please contact support.'
+        } else if (err.message.includes('not configured') || err.message.includes('VITE_API_URL') || err.message.includes('backend API URL')) {
+          // Show full error message for configuration issues so developers can see what needs to be fixed
+          // But make it more user-friendly for end users
+          if (err.message.includes('Vercel') || err.message.includes('DEPLOY_BACKEND')) {
+            // Technical error - show full message
+            errorMessage = err.message
+          } else {
+            // User-friendly version
+            errorMessage = 'Payment service is temporarily unavailable. The backend server needs to be configured. Please contact support or try again later.'
+          }
         } else if (err.message.includes('not authenticated')) {
           errorMessage = 'Please login to continue with checkout.'
         } else if (err.message.includes('empty')) {

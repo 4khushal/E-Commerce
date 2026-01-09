@@ -24,9 +24,37 @@ export const createCheckoutSession = async (items, userId, shippingAddress = nul
     throw new Error('User not authenticated. Please login to continue.')
   }
   
-  if (!apiUrl || apiUrl.includes('localhost')) {
+  // Validate API URL - must be a valid production URL in production, allow localhost in development
+  const isLocalhost = apiUrl && (
+    apiUrl.includes('localhost') || 
+    apiUrl.includes('127.0.0.1') || 
+    apiUrl.startsWith('http://localhost') ||
+    apiUrl.startsWith('http://127.0.0.1')
+  )
+  
+  const isProduction = import.meta.env.PROD
+  
+  // In production, block localhost. In development, allow localhost but check if server is running
+  if (!apiUrl) {
     console.error('⚠️ API URL is not configured:', apiUrl)
-    throw new Error('Payment service is not configured. Please contact support.')
+    console.error('⚠️ Current environment:', import.meta.env.MODE)
+    console.error('⚠️ VITE_API_URL value:', import.meta.env.VITE_API_URL)
+    
+    let errorMessage
+    if (isProduction) {
+      errorMessage = 'Payment service is not configured. The backend API URL (VITE_API_URL) is missing. To fix this: 1) Deploy your backend to Vercel/Railway/Render, 2) Go to your frontend Vercel project → Settings → Environment Variables, 3) Add VITE_API_URL with your backend URL (e.g., https://your-backend.vercel.app), 4) Redeploy. See DEPLOY_BACKEND_NOW.md for detailed instructions.'
+    } else {
+      errorMessage = 'Payment service is not configured. Please set VITE_API_URL in your .env file to your backend URL (e.g., http://localhost:3002 for local development).'
+    }
+    
+    throw new Error(errorMessage)
+  }
+  
+  // Only block localhost in production
+  if (isProduction && isLocalhost) {
+    console.error('⚠️ API URL is set to localhost in production:', apiUrl)
+    const errorMessage = 'Payment service is not configured. The backend API URL (VITE_API_URL) is set to localhost, which will not work in production. To fix this: 1) Deploy your backend to Vercel/Railway/Render, 2) Go to your frontend Vercel project → Settings → Environment Variables, 3) Add VITE_API_URL with your backend URL (e.g., https://your-backend.vercel.app), 4) Redeploy. See DEPLOY_BACKEND_NOW.md for detailed instructions.'
+    throw new Error(errorMessage)
   }
 
   let lastError

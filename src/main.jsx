@@ -11,7 +11,12 @@ import './assets/css/index.css'
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <HelmetProvider>
-      <BrowserRouter>
+      <BrowserRouter
+        future={{
+          v7_startTransition: true,
+          v7_relativeSplatPath: true,
+        }}
+      >
         <App />
         <ToastProvider />
       </BrowserRouter>

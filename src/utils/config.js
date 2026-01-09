@@ -14,3 +14,8 @@ if (!stripePublishableKey) {
   console.warn('Stripe publishable key is missing. Please check your .env file.')
 }
 
+// Validate API URL in production
+if (import.meta.env.PROD && (!import.meta.env.VITE_API_URL || apiUrl.includes('localhost'))) {
+  console.error('⚠️ VITE_API_URL is not set or is using localhost in production!')
+  console.error('This will cause API calls to fail. Please set VITE_API_URL in your environment variables.')
+}
